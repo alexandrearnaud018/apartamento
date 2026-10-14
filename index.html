@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Apartamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: header com quatro números, depois duas colunas (Compras | Tarefas) que viram uma no celular */
+:root {
+  --bg: #f3f5f2;
+  --surface: #ffffff;
+  --ink: #1d2723;
+  --muted: #5f6d67;
+  --line: #dde3df;
+  --accent: #23695a;
+  --accent-soft: #e0eee9;
+  --warn: #9a6512;
+  --warn-soft: #f6ecd9;
+  --danger: #a6362c;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131917; --surface: #1b2320; --ink: #e5ece8; --muted: #93a39c; --line: #2c3833;
+    --accent: #6cc3ac; --accent-soft: #1f3530; --warn: #e2b062; --warn-soft: #3a2f1c; --danger: #ec8b80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131917; --surface: #1b2320; --ink: #e5ece8; --muted: #93a39c; --line: #2c3833;
+  --accent: #6cc3ac; --accent-soft: #1f3530; --warn: #e2b062; --warn-soft: #3a2f1c; --danger: #ec8b80;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+[hidden] { display: none !important; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 32px 16px 56px; display: grid; gap: 28px; }
+header { display: grid; gap: 18px; }
+.eyebrow { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font: 700 clamp(32px, 6vw, 48px)/1.05 var(--display); text-wrap: balance; }
+h2 { margin: 0; font: 700 22px/1.2 var(--display); }
+h3 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: baseline; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 2px; }
+.stat .k { font-size: 13px; color: var(--muted); }
+.stat .v { font: 500 24px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+.stat .s { font-size: 12px; color: var(--muted); }
+.stat.main .v { color: var(--accent); }
+.note { background: var(--warn-soft); color: var(--ink); border-radius: 8px; padding: 10px 14px; font-size: 14px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 28px; align-items: start; }
+.col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; }
+.add { display: flex; gap: 8px; }
+.add input[type="text"], .add input[type="password"] { flex: 1 1 0; min-width: 0; }
+.add input.valor-in { flex: 0 0 100px; }
+.add select, .add button { flex: none; }
+input[type="text"], input[type="password"], select {
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px;
+}
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: inherit; cursor: pointer; border-radius: 8px; padding: 8px 14px; border: 1px solid transparent; }
+.btn { background: var(--accent); color: var(--surface); font-weight: 600; }
+.btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+.btn-link { background: none; padding: 4px 6px; color: var(--muted); font-size: 13px; }
+.btn-link:hover { color: var(--ink); }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
+.count { font-family: var(--mono); letter-spacing: 0; }
+ul { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+li.item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface); }
+li.item.editing { flex-wrap: wrap; }
+li.drag { cursor: grab; user-select: none; -webkit-user-select: none; }
+li.dragging { position: relative; z-index: 2; cursor: grabbing; box-shadow: 0 10px 28px rgb(0 0 0 / .18); border-radius: 8px; will-change: transform; }
+/* Animação do arraste mantida mesmo com "reduzir movimento": é resposta direta ao gesto */
+li.drag:not(.dragging) { transition: transform .28s cubic-bezier(.25, 1, .5, 1); will-change: transform; }
+li.dragging.settling { transition: transform .2s cubic-bezier(.25, 1, .5, 1), box-shadow .2s; box-shadow: none; }
+.is-dragging, .is-dragging * { cursor: grabbing !important; user-select: none; }
+.handle { touch-action: none; cursor: grab; position: relative; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.handle::before { content: ""; position: absolute; inset: -10px -8px; }
+@media (pointer: coarse) {
+  .rank.handle { width: 40px; height: 40px; font-size: 14px; gap: 0; grid-template-rows: auto auto; align-content: center; border-style: dashed; }
+  .rank.handle::after { content: "⠿"; font-size: 11px; line-height: 1; opacity: .6; }
+  li.dragging .rank.handle { border-style: solid; border-color: var(--accent); }
+}
+@media (max-width: 480px) { .add { flex-wrap: wrap; } .add input[type="text"]:not(.valor-in) { flex-basis: 100%; } li.item { flex-wrap: wrap; } }
+li.item:first-child { border-top: 0; }
+li.empty { padding: 12px 14px; color: var(--muted); font-size: 14px; }
+.item .body { flex: 1 1 160px; min-width: 0; display: grid; }
+.item .nome { font-weight: 500; overflow-wrap: anywhere; }
+.item .obs { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.item .valor { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.item .valor.est { color: var(--muted); font-size: 13px; }
+.item .acts { display: flex; gap: 4px; align-items: center; flex: none; }
+.pill { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.rank { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; font: 500 12px/1 var(--mono); border: 1px solid var(--line); color: var(--muted); }
+.rank.p1 { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.rank.p2 { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+li.p1 .nome { font-weight: 600; }
+li.p3 .nome { color: var(--muted); }
+.s-feito .nome { text-decoration: line-through; color: var(--muted); }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; flex: none; }
+.inline { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.inline input[type="text"], .inline select { flex: 1 1 140px; min-width: 0; }
+.inline .row-end { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+.inline .spacer { flex: 1; }
+.login { max-width: 420px; display: grid; gap: 12px; }
+.login p { margin: 0; color: var(--muted); }
+footer { display: flex; justify-content: flex-end; }
+@media (prefers-reduced-motion: no-preference) { button { transition: background-color .15s, color .15s; } }
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <header>
+    <p class="eyebrow">Mudança · controle</p>
+    <h1>Apartamento</h1>
+    <div class="stats" id="stats" hidden>
+      <div class="stat main"><span class="k">Total gasto</span><span class="v" id="st-total">—</span><span class="s" id="st-total-s">&nbsp;</span></div>
+      <div class="stat"><span class="k">Total pendente</span><span class="v" id="st-pend">—</span><span class="s" id="st-pend-s">&nbsp;</span></div>
+      <div class="stat"><span class="k">Total geral</span><span class="v" id="st-geral">—</span><span class="s">gasto + pendente estimado</span></div>
+      <div class="stat"><span class="k">Tarefas abertas</span><span class="v" id="st-tar">—</span><span class="s" id="st-tar-s">&nbsp;</span></div>
+    </div>
+  </header>
+
+  <div class="note" id="msg" hidden></div>
+
+  <form class="login" id="f-login" hidden>
+    <p>Digite a senha para ver e editar a lista. Ela fica salva neste aparelho.</p>
+    <div class="add">
+      <input type="password" id="senha" placeholder="Senha" required aria-label="Senha" autocomplete="current-password">
+      <button class="btn" type="submit">Entrar</button>
+    </div>
+  </form>
+
+  <div class="cols" id="app" hidden>
+    <section class="col">
+      <h2>Compras</h2>
+      <form class="add" id="f-compra">
+        <input type="text" id="c-nome" placeholder="Item" required aria-label="Item">
+        <input type="text" id="c-valor" class="valor-in" placeholder="Valor R$" inputmode="decimal" aria-label="Valor">
+        <select id="c-status" aria-label="Situação">
+          <option value="pendente">Pendente</option>
+          <option value="comprado">Comprado</option>
+          <option value="sem_custo">Sem custo</option>
+        </select>
+        <button class="btn" type="submit">Adicionar</button>
+      </form>
+      <div class="group"><h3>Pendentes <span class="count" id="n-c-pendente"></span></h3><ul id="l-c-pendente"></ul></div>
+      <div class="group"><h3>Comprados <span class="count" id="n-c-comprado"></span></h3><ul id="l-c-comprado"></ul></div>
+      <div class="group"><h3>Sem custo <span class="count" id="n-c-sem_custo"></span></h3><ul id="l-c-sem_custo"></ul></div>
+    </section>
+
+    <section class="col">
+      <h2>Tarefas</h2>
+      <form class="add" id="f-tarefa">
+        <input type="text" id="t-nome" placeholder="Ex.: instalar chuveiro" required aria-label="Tarefa">
+        <button class="btn" type="submit">Adicionar</button>
+      </form>
+      <div class="group"><h3>A fazer <span class="count" id="n-t-pendente"></span></h3><ul id="l-t-pendente"></ul></div>
+      <div class="group"><h3>Feitas <span class="count" id="n-t-feito"></span></h3><ul id="l-t-feito"></ul></div>
+    </section>
+  </div>
+
+  <footer><button class="btn-link" id="sair" hidden>Sair deste aparelho</button></footer>
+</main>
+
+<script>
+(function () {
+  // Endereço da ponte (Apps Script). Não é segredo: sem a senha ela não responde nada.
+  const API_URL = "https://script.google.com/macros/s/AKfycbwClPF_aoCYrKL47d42G-yWMhRf7GhLKCDFLVBzMlb8P9UBUzZ4rDaCPANElCrv-YDv/exec";
+  const CHAVE_SENHA = "apto-senha";
+
+  const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  let items = [], loaded = false;
+  let editing = null, buying = null, confirmDel = null;
+  let drag = null, renderPending = false;
+
+  // ---------- Senha (guardada só neste aparelho) ----------
+  function getSenha() { try { return localStorage.getItem(CHAVE_SENHA) || ""; } catch (_) { return ""; } }
+  function setSenha(s) { try { s ? localStorage.setItem(CHAVE_SENHA, s) : localStorage.removeItem(CHAVE_SENHA); } catch (_) {} }
+
+  function mostrarLogin(texto) {
+    $("app").hidden = true; $("stats").hidden = true; $("sair").hidden = true;
+    $("f-login").hidden = false;
+    msg(texto || "");
+    $("senha").focus();
+  }
+  function mostrarApp() {
+    $("f-login").hidden = true;
+    $("app").hidden = false; $("stats").hidden = false; $("sair").hidden = false;
+  }
+
+  // ---------- Comunicação com a ponte ----------
+  // text/plain evita a checagem extra (preflight) que o Apps Script não suporta
+  async function api(acao, dados) {
+    const r = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(Object.assign({ senha: getSenha(), acao }, dados || {}))
+    });
+    const json = await r.json();
+    if (json.erro === "senha") { const e = new Error("senha"); e.code = "senha"; throw e; }
+    if (json.erro) throw new Error(json.detalhe || json.erro);
+    return json;
+  }
+
+  async function carregar() {
+    try {
+      const { itens } = await api("listar");
+      if (drag && drag.active) return;
+      items = itens;
+      loaded = true;
+      mostrarApp();
+      render();
+    } catch (e) {
+      if (e.code === "senha") { setSenha(""); mostrarLogin("Senha incorreta."); return; }
+      msg("Não foi possível carregar a lista (" + e.message + "). Recarregue a página ou use \"Sair deste aparelho\" para digitar a senha de novo.");
+      $("sair").hidden = false;
+    }
+  }
+
+  // Aplica a mudança na tela na hora e grava em segundo plano; se falhar, recarrega da planilha
+  async function write(local, remoto) {
+    local();
+    render();
+    try { await remoto(); msg(""); return true; }
+    catch (e) {
+      if (e.code === "senha") { setSenha(""); mostrarLogin("Senha incorreta."); return false; }
+      msg("Não foi possível salvar agora. Tente de novo em alguns segundos.");
+      carregar();
+      return false;
+    }
+  }
+
+  const find = (id) => items.find((i) => i.id === id);
+  const patch = (id, campos) => write(() => Object.assign(find(id) || {}, campos), () => api("salvar", { item: Object.assign({ id }, campos) }));
+
+  // ---------- Regras ----------
+  function parseValor(s) {
+    s = String(s || "").replace(/[R$\s]/g, "");
+    if (!s) return null;
+    if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+    else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+    const n = Number(s);
+    return isFinite(n) ? n : null;
+  }
+  // Comprado sem valor (vazio ou zero) conta como sem custo
+  const statusCompra = (status, valor) => (status === "comprado" && !valor ? "sem_custo" : status);
+  const fmtValorInput = (v) => (typeof v === "number" ? String(v).replace(".", ",") : "");
+
+  function msg(text) { const m = $("msg"); m.textContent = text || ""; m.hidden = !text; }
+
+  // Itens sem "ordem" vão para o fim, na ordem em que aparecem na planilha
+  const sortKey = (i) => (typeof i.ordem === "number" ? i.ordem : Infinity);
+  const groupList = (tipo, status) => items.filter((i) => i.tipo === tipo && i.status === status).sort((a, b) => sortKey(a) - sortKey(b));
+  const proximaOrdem = (tipo, status) => groupList(tipo, status).reduce((m, i) => (typeof i.ordem === "number" ? Math.max(m, i.ordem) : m), 0) + 1;
+  // Faixa de prioridade: primeiro terço alta, segundo média, resto baixa
+  const tier = (i, n) => (i < Math.ceil(n / 3) ? 1 : i < Math.ceil((2 * n) / 3) ? 2 : 3);
+
+  // Grava só o item movido, com uma ordem entre os vizinhos; renumera tudo apenas se não houver espaço
+  function reorder(ids, movedId) {
+    const list = ids.map(find).filter(Boolean);
+    const k = list.findIndex((i) => i.id === movedId);
+    const prev = list[k - 1], next = list[k + 1];
+    if (k < 0 || (!prev && !next)) { render(); return; }
+    const kp = prev && sortKey(prev), kn = next && sortKey(next);
+    let val = !prev ? kn - 1 : !next ? kp + 1 : (kp + kn) / 2;
+    const ordens = {};
+    if (!isFinite(val) || (prev && !(val > kp)) || (next && !(val < kn))) list.forEach((it, i) => { ordens[it.id] = i + 1; });
+    else ordens[movedId] = val;
+    write(() => { for (const [id, v] of Object.entries(ordens)) find(id).ordem = v; }, () => api("ordenar", { ordens }));
+  }
+
+  function itemHTML(it, idx, n) {
+    const id = esc(it.id);
+    const isCompra = it.tipo === "compra";
+    if (editing === it.id) {
+      const opts = isCompra
+        ? [["pendente", "Pendente"], ["comprado", "Comprado"], ["sem_custo", "Sem custo"]]
+        : [["pendente", "A fazer"], ["feito", "Feita"]];
+      return `<li class="item editing"><form class="inline" data-form="edit" data-id="${id}">
+        <input type="text" id="e-nome" value="${esc(it.nome)}" required aria-label="Nome">
+        ${isCompra ? `<input type="text" id="e-valor" class="valor-in" value="${esc(fmtValorInput(it.valor))}" placeholder="Valor R$" inputmode="decimal" aria-label="Valor">` : ""}
+        <input type="text" id="e-obs" value="${esc(it.obs || "")}" placeholder="Observação" aria-label="Observação">
+        <select id="e-status" aria-label="Situação">${opts.map(([v, l]) => `<option value="${v}"${it.status === v ? " selected" : ""}>${l}</option>`).join("")}</select>
+        <div class="row-end">
+          <button class="btn" type="submit">Salvar</button>
+          <button class="btn-ghost" type="button" data-act="cancel">Cancelar</button>
+          <span class="spacer"></span>
+          <button class="btn-danger" type="button" data-act="del" data-id="${id}">${confirmDel === it.id ? "Confirmar exclusão" : "Excluir"}</button>
+        </div>
+      </form></li>`;
+    }
+    let left = "", right = "", acts = "";
+    if (!isCompra) left = `<input type="checkbox" data-act="toggle" data-id="${id}" ${it.status === "feito" ? "checked" : ""} aria-label="Marcar como feita">`;
+    if (isCompra && it.status === "comprado" && typeof it.valor === "number") right = `<span class="valor">${BRL.format(it.valor)}</span>`;
+    if (isCompra && it.status === "pendente" && typeof it.valor === "number") right = `<span class="valor est">~ ${BRL.format(it.valor)}</span>`;
+    if (isCompra && it.status === "sem_custo") right = `<span class="pill">Já tenho</span>`;
+    if (buying === it.id) {
+      acts = `<form class="inline" data-form="buy" data-id="${id}">
+        <input type="text" id="b-valor" placeholder="Quanto pagou? R$" inputmode="decimal" aria-label="Valor pago" value="${esc(fmtValorInput(it.valor))}">
+        <button class="btn" type="submit">Salvar</button>
+        <button class="btn-ghost" type="button" data-act="free" data-id="${id}">Foi sem custo</button>
+        <button class="btn-link" type="button" data-act="cancel">Cancelar</button>
+      </form>`;
+      return `<li class="item editing s-${esc(it.status)}"><div class="body"><span class="nome">${esc(it.nome)}</span>${it.obs ? `<span class="obs">${esc(it.obs)}</span>` : ""}</div>${acts}</li>`;
+    }
+    const pend = it.status === "pendente";
+    const p = pend ? tier(idx, n) : 0;
+    const canDrag = pend && n > 1;
+    if (pend) left += `<span class="rank p${p}${canDrag ? " handle" : ""}" title="Prioridade ${idx + 1} de ${n}${canDrag ? " · arraste para reordenar" : ""}">${idx + 1}</span>`;
+    acts = `<div class="acts">${isCompra && pend ? `<button class="btn-ghost" data-act="buy" data-id="${id}">Comprei</button>` : ""}<button class="btn-link" data-act="edit" data-id="${id}">Editar</button></div>`;
+    return `<li class="item s-${esc(it.status)}${p ? " p" + p : ""}${canDrag ? " drag" : ""}" data-id="${id}">${left}<div class="body"><span class="nome">${esc(it.nome)}</span>${it.obs ? `<span class="obs">${esc(it.obs)}</span>` : ""}</div>${right}${acts}</li>`;
+  }
+
+  const EMPTY = {
+    "c-pendente": "Nada pendente.", "c-comprado": "Nenhuma compra registrada.", "c-sem_custo": "Nenhum item.",
+    "t-pendente": "Nenhuma tarefa. Adicione a primeira acima.", "t-feito": "Nenhuma tarefa concluída ainda."
+  };
+
+  function render() {
+    if (drag && drag.active) { renderPending = true; return; }
+    renderPending = false;
+    for (const key of Object.keys(EMPTY)) {
+      const [t, status] = key.split("-");
+      const list = groupList(t === "c" ? "compra" : "tarefa", status);
+      $("l-" + key).innerHTML = !loaded
+        ? `<li class="empty">Carregando…</li>`
+        : list.length ? list.map((it, i) => itemHTML(it, i, list.length)).join("") : `<li class="empty">${EMPTY[key]}</li>`;
+      $("n-" + key).textContent = loaded ? list.length : "";
+    }
+    const compras = items.filter((i) => i.tipo === "compra");
+    const comprados = compras.filter((i) => i.status === "comprado");
+    const pend = compras.filter((i) => i.status === "pendente");
+    const est = pend.reduce((s, i) => s + (typeof i.valor === "number" ? i.valor : 0), 0);
+    const gasto = comprados.reduce((s, i) => s + (i.valor || 0), 0);
+    const tarefas = items.filter((i) => i.tipo === "tarefa");
+    const abertas = tarefas.filter((i) => i.status === "pendente");
+    if (loaded) {
+      $("st-total").textContent = BRL.format(gasto);
+      $("st-total-s").textContent = comprados.length + (comprados.length === 1 ? " item comprado" : " itens comprados");
+      const semEst = pend.filter((i) => typeof i.valor !== "number").length;
+      $("st-pend").textContent = BRL.format(est);
+      $("st-pend-s").textContent = pend.length + (pend.length === 1 ? " item" : " itens") + (semEst ? " · " + semEst + " sem estimativa" : "");
+      $("st-geral").textContent = BRL.format(gasto + est);
+      $("st-tar").textContent = abertas.length;
+      $("st-tar-s").textContent = (tarefas.length - abertas.length) + " concluídas";
+    }
+    const f = document.querySelector("[data-form] input[type=text]");
+    if (f && !f.dataset.focused) { f.dataset.focused = "1"; f.focus(); }
+  }
+
+  const slug = (s) => (s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item") + "-" + Date.now().toString(36);
+
+  function adicionar(item) {
+    if (item.status === "pendente") item.ordem = proximaOrdem(item.tipo, item.status);
+    return write(() => items.push(item), () => api("salvar", { item }));
+  }
+
+  // ---------- Eventos ----------
+  $("f-login").addEventListener("submit", (e) => {
+    e.preventDefault();
+    setSenha($("senha").value.trim());
+    $("senha").value = "";
+    msg("Carregando…");
+    carregar();
+  });
+  $("sair").addEventListener("click", () => { setSenha(""); items = []; loaded = false; mostrarLogin(""); });
+
+  $("f-compra").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nome = $("c-nome").value.trim(); if (!nome) return;
+    const valor = parseValor($("c-valor").value);
+    adicionar({ id: slug(nome), tipo: "compra", nome, status: statusCompra($("c-status").value, valor), valor, obs: "", ordem: null });
+    $("c-nome").value = ""; $("c-valor").value = "";
+  });
+  $("f-tarefa").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nome = $("t-nome").value.trim(); if (!nome) return;
+    adicionar({ id: slug(nome), tipo: "tarefa", nome, status: "pendente", valor: null, obs: "", ordem: null });
+    $("t-nome").value = "";
+  });
+
+  document.addEventListener("submit", (e) => {
+    const form = e.target.closest("[data-form]"); if (!form) return;
+    e.preventDefault();
+    const id = form.dataset.id, it = find(id); if (!it) return;
+    if (form.dataset.form === "buy") {
+      const valor = parseValor($("b-valor").value);
+      buying = null;
+      patch(id, { status: statusCompra("comprado", valor), valor: valor || null });
+    } else {
+      const campos = { nome: $("e-nome").value.trim() || it.nome, obs: $("e-obs").value.trim(), status: $("e-status").value };
+      if (it.tipo === "compra") { campos.valor = parseValor($("e-valor").value); campos.status = statusCompra(campos.status, campos.valor); }
+      if (campos.status === "pendente" && it.status !== "pendente") campos.ordem = proximaOrdem(it.tipo, "pendente");
+      editing = null; confirmDel = null;
+      patch(id, campos);
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act]"); if (!b || b.type === "checkbox") return;
+    const act = b.dataset.act, id = b.dataset.id;
+    if (act === "edit") { editing = id; buying = null; confirmDel = null; render(); }
+    else if (act === "buy") { buying = id; editing = null; render(); }
+    else if (act === "free") { buying = null; patch(id, { status: "sem_custo", valor: null }); }
+    else if (act === "cancel") { editing = null; buying = null; confirmDel = null; render(); }
+    else if (act === "del") {
+      if (confirmDel !== id) { confirmDel = id; render(); return; }
+      editing = null; confirmDel = null;
+      write(() => { items = items.filter((i) => i.id !== id); }, () => api("excluir", { id }));
+    }
+  });
+  document.addEventListener("change", (e) => {
+    const c = e.target; if (c.dataset.act !== "toggle") return;
+    const id = c.dataset.id, feito = c.checked;
+    const campos = { status: feito ? "feito" : "pendente" };
+    if (!feito) campos.ordem = proximaOrdem("tarefa", "pendente");
+    patch(id, campos);
+  });
+
+  // Arrastar para reordenar: com mouse, a linha inteira; no toque, pelo número da prioridade
+  document.addEventListener("pointerdown", (e) => {
+    const li = e.target.closest("li.drag");
+    if (drag || !li || e.button !== 0) return;
+    if (e.target.closest("button, input, select, a")) return;
+    if (e.pointerType !== "mouse" && !e.target.closest(".handle")) return;
+    drag = { li, ul: li.parentElement, startY: e.clientY, active: false, pid: e.pointerId };
+  });
+  // O item segue o dedo/mouse via transform; os outros deslizam para abrir espaço. Posições em coordenadas da página.
+  function startDrag(e) {
+    const d = drag;
+    d.active = true;
+    d.lis = [...d.ul.querySelectorAll("li.drag")];
+    d.from = d.to = d.lis.indexOf(d.li);
+    d.rects = d.lis.map((x) => { const r = x.getBoundingClientRect(); return { top: r.top + scrollY, h: r.height }; });
+    d.startPageY = d.startY + scrollY;
+    d.li.classList.add("dragging");
+    document.body.classList.add("is-dragging");
+    try { d.li.setPointerCapture(e.pointerId); } catch (_) {}
+    d.raf = requestAnimationFrame(autoScroll);
+  }
+  function updateDrag() {
+    const d = drag, r = d.rects, from = d.from;
+    const dy = d.lastY + scrollY - d.startPageY;
+    d.li.style.transform = `translateY(${dy}px) scale(1.015)`;
+    const center = r[from].top + r[from].h / 2 + dy;
+    let to = from;
+    for (let i = from + 1; i < r.length; i++) if (center > r[i].top + r[i].h / 2) to = i;
+    for (let i = from - 1; i >= 0; i--) if (center < r[i].top + r[i].h / 2) to = i;
+    d.to = to;
+    d.lis.forEach((x, i) => {
+      if (i === from) return;
+      const shift = from < i && i <= to ? -r[from].h : to <= i && i < from ? r[from].h : 0;
+      x.style.transform = shift ? `translateY(${shift}px)` : "";
+    });
+  }
+  function autoScroll() {
+    if (!drag || !drag.active) return;
+    const edge = 70, y = drag.lastY;
+    const v = y < edge ? -(edge - y) / 4 : y > innerHeight - edge ? (y - (innerHeight - edge)) / 4 : 0;
+    if (v) { scrollBy(0, v); updateDrag(); }
+    drag.raf = requestAnimationFrame(autoScroll);
+  }
+  document.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.pid) return;
+    drag.lastY = e.clientY;
+    if (!drag.active) { if (Math.abs(e.clientY - drag.startY) < 4) return; startDrag(e); }
+    e.preventDefault();
+    updateDrag();
+  });
+  function endDrag(e) {
+    if (!drag || e.pointerId !== drag.pid) return;
+    const d = drag;
+    if (!d.active) { drag = null; if (renderPending) render(); return; }
+    cancelAnimationFrame(d.raf);
+    const r = d.rects, { from, to } = d;
+    let final = 0;
+    if (to > from) for (let i = from + 1; i <= to; i++) final += r[i].h;
+    else for (let i = to; i < from; i++) final -= r[i].h;
+    d.li.classList.add("settling");
+    d.li.style.transform = `translateY(${final}px)`;
+    const ids = d.lis.map((x) => x.dataset.id);
+    ids.splice(to, 0, ids.splice(from, 1)[0]);
+    setTimeout(() => {
+      drag = null;
+      document.body.classList.remove("is-dragging");
+      d.lis.forEach((x) => { x.style.transform = ""; x.classList.remove("dragging", "settling"); });
+      if (to === from) render(); else reorder(ids, d.li.dataset.id);
+    }, 210);
+  }
+  // iOS às vezes rola a página mesmo com touch-action: none; bloqueia o toque enquanto um arraste está em curso
+  document.addEventListener("touchmove", (e) => { if (drag) e.preventDefault(); }, { passive: false });
+  document.addEventListener("contextmenu", (e) => { if (drag || e.target.closest(".handle")) e.preventDefault(); });
+  document.addEventListener("pointerup", endDrag);
+  document.addEventListener("pointercancel", endDrag);
+
+  // Atualiza ao voltar para a aba e a cada 30 s, para ver mudanças feitas em outro aparelho
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && getSenha()) carregar(); });
+  setInterval(() => { if (!document.hidden && getSenha() && !editing && !buying) carregar(); }, 30000);
+
+  if (getSenha()) { render(); carregar(); } else mostrarLogin("");
+})();
+</script>
+</body>
+</html>
