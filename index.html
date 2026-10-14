@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Apartamento</title>
+<script>
+  // Aplica o tema salvo antes de desenhar a página, para não piscar claro
+  try { const t = localStorage.getItem("apto-tema"); if (t) document.documentElement.dataset.theme = t; } catch (_) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -43,6 +47,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(-
 [hidden] { display: none !important; }
 .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 16px 56px; display: grid; gap: 28px; }
 header { display: grid; gap: 18px; }
+.topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.tema { padding: 6px 12px; font-size: 13px; }
 .eyebrow { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 h1 { margin: 0; font: 700 clamp(32px, 6vw, 48px)/1.05 var(--display); text-wrap: balance; }
 h2 { margin: 0; font: 700 22px/1.2 var(--display); }
@@ -120,7 +126,10 @@ footer { display: flex; justify-content: flex-end; }
 
 <main class="wrap">
   <header>
-    <p class="eyebrow">Mudança · controle</p>
+    <div class="topo">
+      <p class="eyebrow">Mudança · controle</p>
+      <button class="btn-ghost tema" id="tema" type="button" aria-label="Alternar modo claro/escuro"></button>
+    </div>
     <h1>Apartamento</h1>
     <div class="stats" id="stats" hidden>
       <div class="stat main"><span class="k">Total gasto</span><span class="v" id="st-total">—</span><span class="s" id="st-total-s">&nbsp;</span></div>
@@ -367,6 +376,17 @@ footer { display: flex; justify-content: flex-end; }
     if (item.status === "pendente") item.ordem = proximaOrdem(item.tipo, item.status);
     return write(() => items.push(item), () => api("salvar", { item }));
   }
+
+  // ---------- Tema claro/escuro ----------
+  const temaAtual = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  function mostrarTema() { $("tema").textContent = temaAtual() === "dark" ? "☀ Modo claro" : "☾ Modo escuro"; }
+  $("tema").addEventListener("click", () => {
+    const novo = temaAtual() === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = novo;
+    try { localStorage.setItem("apto-tema", novo); } catch (_) {}
+    mostrarTema();
+  });
+  mostrarTema();
 
   // ---------- Eventos ----------
   $("f-login").addEventListener("submit", (e) => {
