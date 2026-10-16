@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* Layout: header com quatro números, depois duas colunas (Compras | Tarefas) que viram uma no celular */
+/* Layout: header com quatro números, depois duas colunas (Compras | Tarefas + Dia a dia) que viram uma no celular */
 :root {
   --bg: #f3f5f2;
   --surface: #ffffff;
@@ -77,6 +77,7 @@ button { font: inherit; cursor: pointer; border-radius: 8px; padding: 8px 14px; 
 .btn-link { background: none; padding: 4px 6px; color: var(--muted); font-size: 13px; }
 .btn-link:hover { color: var(--ink); }
 .btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.col h2:not(:first-child) { margin-top: 18px; }
 .group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
 .count { font-family: var(--mono); letter-spacing: 0; }
 ul { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
@@ -110,7 +111,7 @@ li.empty { padding: 12px 14px; color: var(--muted); font-size: 14px; }
 .rank.p2 { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
 li.p1 .nome { font-weight: 600; }
 li.p3 .nome { color: var(--muted); }
-.s-feito .nome { text-decoration: line-through; color: var(--muted); }
+.s-feito .nome, .s-comprado:has(input[type="checkbox"]) .nome { text-decoration: line-through; color: var(--muted); }
 input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; flex: none; }
 .inline { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
 .inline input[type="text"], .inline select { flex: 1 1 140px; min-width: 0; }
@@ -175,6 +176,14 @@ footer { display: flex; justify-content: flex-end; }
       </form>
       <div class="group"><h3>A fazer <span class="count" id="n-t-pendente"></span></h3><ul id="l-t-pendente"></ul></div>
       <div class="group"><h3>Feitas <span class="count" id="n-t-feito"></span></h3><ul id="l-t-feito"></ul></div>
+
+      <h2>Dia a dia</h2>
+      <form class="add" id="f-mercado">
+        <input type="text" id="m-nome" placeholder="Ex.: detergente" required aria-label="Item do dia a dia">
+        <button class="btn" type="submit">Adicionar</button>
+      </form>
+      <div class="group"><h3>A comprar <span class="count" id="n-m-pendente"></span></h3><ul id="l-m-pendente"></ul></div>
+      <div class="group"><h3>Comprados <span class="count" id="n-m-comprado"></span></h3><ul id="l-m-comprado"></ul></div>
     </section>
   </div>
 
@@ -294,9 +303,11 @@ footer { display: flex; justify-content: flex-end; }
   function itemHTML(it, idx, n) {
     const id = esc(it.id);
     const isCompra = it.tipo === "compra";
+    const isMercado = it.tipo === "mercado";
     if (editing === it.id) {
       const opts = isCompra
         ? [["pendente", "Pendente"], ["comprado", "Comprado"], ["sem_custo", "Sem custo"]]
+        : isMercado ? [["pendente", "A comprar"], ["comprado", "Comprado"]]
         : [["pendente", "A fazer"], ["feito", "Feita"]];
       return `<li class="item editing"><form class="inline" data-form="edit" data-id="${id}">
         <input type="text" id="e-nome" value="${esc(it.nome)}" required aria-label="Nome">
@@ -312,7 +323,7 @@ footer { display: flex; justify-content: flex-end; }
       </form></li>`;
     }
     let left = "", right = "", acts = "";
-    if (!isCompra) left = `<input type="checkbox" data-act="toggle" data-id="${id}" ${it.status === "feito" ? "checked" : ""} aria-label="Marcar como feita">`;
+    if (!isCompra) left = `<input type="checkbox" data-act="toggle" data-id="${id}" ${it.status === FEITO[it.tipo] ? "checked" : ""} aria-label="${isMercado ? "Marcar como comprado" : "Marcar como feita"}">`;
     if (isCompra && it.status === "comprado" && typeof it.valor === "number") right = `<span class="valor">${BRL.format(it.valor)}</span>`;
     if (isCompra && it.status === "pendente" && typeof it.valor === "number") right = `<span class="valor est">~ ${BRL.format(it.valor)}</span>`;
     if (isCompra && it.status === "sem_custo") right = `<span class="pill">Já tenho</span>`;
@@ -333,9 +344,14 @@ footer { display: flex; justify-content: flex-end; }
     return `<li class="item s-${esc(it.status)}${p ? " p" + p : ""}${canDrag ? " drag" : ""}" data-id="${id}">${left}<div class="body"><span class="nome">${esc(it.nome)}</span>${it.obs ? `<span class="obs">${esc(it.obs)}</span>` : ""}</div>${right}${acts}</li>`;
   }
 
+  // Status de "concluído" de cada lista com checkbox
+  const FEITO = { tarefa: "feito", mercado: "comprado" };
+  const TIPOS = { c: "compra", t: "tarefa", m: "mercado" };
+
   const EMPTY = {
     "c-pendente": "Nada pendente.", "c-comprado": "Nenhuma compra registrada.", "c-sem_custo": "Nenhum item.",
-    "t-pendente": "Nenhuma tarefa. Adicione a primeira acima.", "t-feito": "Nenhuma tarefa concluída ainda."
+    "t-pendente": "Nenhuma tarefa. Adicione a primeira acima.", "t-feito": "Nenhuma tarefa concluída ainda.",
+    "m-pendente": "Nada na lista.", "m-comprado": "Nada comprado ainda."
   };
 
   function render() {
@@ -343,7 +359,7 @@ footer { display: flex; justify-content: flex-end; }
     renderPending = false;
     for (const key of Object.keys(EMPTY)) {
       const [t, status] = key.split("-");
-      const list = groupList(t === "c" ? "compra" : "tarefa", status);
+      const list = groupList(TIPOS[t], status);
       $("l-" + key).innerHTML = !loaded
         ? `<li class="empty">Carregando…</li>`
         : list.length ? list.map((it, i) => itemHTML(it, i, list.length)).join("") : `<li class="empty">${EMPTY[key]}</li>`;
@@ -412,6 +428,13 @@ footer { display: flex; justify-content: flex-end; }
     $("t-nome").value = "";
   });
 
+  $("f-mercado").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nome = $("m-nome").value.trim(); if (!nome) return;
+    adicionar({ id: slug(nome), tipo: "mercado", nome, status: "pendente", valor: null, obs: "", ordem: null });
+    $("m-nome").value = "";
+  });
+
   document.addEventListener("submit", (e) => {
     const form = e.target.closest("[data-form]"); if (!form) return;
     e.preventDefault();
@@ -444,9 +467,9 @@ footer { display: flex; justify-content: flex-end; }
   });
   document.addEventListener("change", (e) => {
     const c = e.target; if (c.dataset.act !== "toggle") return;
-    const id = c.dataset.id, feito = c.checked;
-    const campos = { status: feito ? "feito" : "pendente" };
-    if (!feito) campos.ordem = proximaOrdem("tarefa", "pendente");
+    const id = c.dataset.id, feito = c.checked, tipo = find(id).tipo;
+    const campos = { status: feito ? FEITO[tipo] : "pendente" };
+    if (!feito) campos.ordem = proximaOrdem(tipo, "pendente");
     patch(id, campos);
   });
 
