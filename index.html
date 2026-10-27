@@ -116,6 +116,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 .inline input[type="text"], .inline select { flex: 1 1 140px; min-width: 0; }
 .inline .row-end { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
 .inline .spacer { flex: 1; }
+.sub { margin: 6px 0 0; font: 700 17px/1.2 var(--display); }
 .login { max-width: 420px; display: grid; gap: 12px; }
 .login p { margin: 0; color: var(--muted); }
 footer { display: flex; justify-content: flex-end; }
@@ -179,6 +180,14 @@ footer { display: flex; justify-content: flex-end; }
 
     <section class="col">
       <h2>Dia a dia</h2>
+      <p class="sub">Tarefas de hoje</p>
+      <form class="add" id="f-rotina">
+        <input type="text" id="r-nome" placeholder="Ex.: tirar o lixo" required aria-label="Tarefa do dia a dia">
+        <button class="btn" type="submit">Adicionar</button>
+      </form>
+      <div class="group"><h3>A fazer hoje <span class="count" id="n-r-pendente"></span></h3><ul id="l-r-pendente"></ul></div>
+      <div class="group"><h3>Feitas hoje <span class="count" id="n-r-feito"></span></h3><ul id="l-r-feito"></ul></div>
+      <p class="sub">Compras</p>
       <form class="add" id="f-mercado">
         <input type="text" id="m-nome" placeholder="Ex.: detergente" required aria-label="Item do dia a dia">
         <button class="btn" type="submit">Adicionar</button>
@@ -238,7 +247,7 @@ footer { display: flex; justify-content: flex-end; }
     try {
       const { itens } = await api("listar");
       if (drag && drag.active) return;
-      items = itens;
+      items = itens.map(rotinaDoDia);
       loaded = true;
       mostrarApp();
       render();
@@ -278,6 +287,10 @@ footer { display: flex; justify-content: flex-end; }
   const statusCompra = (status, valor) => (status === "comprado" && !valor ? "sem_custo" : status);
   const fmtValorInput = (v) => (typeof v === "number" ? String(v).replace(".", ",") : "");
 
+  // Tarefas do dia a dia: "feito" guarda a data em valor (AAAAMMDD) e volta a "a fazer" no dia seguinte
+  function hoje() { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+  const rotinaDoDia = (it) => (it.tipo === "rotina" && it.status === "feito" && Number(it.valor) !== hoje() ? Object.assign(it, { status: "pendente" }) : it);
+
   function msg(text) { const m = $("msg"); m.textContent = text || ""; m.hidden = !text; }
 
   // Itens sem "ordem" vão para o fim, na ordem em que aparecem na planilha
@@ -309,6 +322,7 @@ footer { display: flex; justify-content: flex-end; }
       const opts = isCompra
         ? [["pendente", "Pendente"], ["comprado", "Comprado"], ["sem_custo", "Sem custo"]]
         : isMercado ? [["pendente", "A comprar"], ["comprado", "Comprado"]]
+        : it.tipo === "rotina" ? [["pendente", "A fazer hoje"], ["feito", "Feita hoje"]]
         : [["pendente", "A fazer"], ["feito", "Feita"]];
       return `<li class="item editing"><form class="inline" data-form="edit" data-id="${id}">
         <input type="text" id="e-nome" value="${esc(it.nome)}" required aria-label="Nome">
@@ -346,12 +360,13 @@ footer { display: flex; justify-content: flex-end; }
   }
 
   // Status de "concluído" de cada lista com checkbox
-  const FEITO = { tarefa: "feito", mercado: "comprado" };
-  const TIPOS = { c: "compra", t: "tarefa", m: "mercado" };
+  const FEITO = { tarefa: "feito", rotina: "feito", mercado: "comprado" };
+  const TIPOS = { c: "compra", t: "tarefa", r: "rotina", m: "mercado" };
 
   const EMPTY = {
     "c-pendente": "Nada pendente.", "c-comprado": "Nenhuma compra registrada.", "c-sem_custo": "Nenhum item.",
     "t-pendente": "Nenhuma tarefa. Adicione a primeira acima.", "t-feito": "Nenhuma tarefa concluída ainda.",
+    "r-pendente": "Tudo feito por hoje.", "r-feito": "Nada feito hoje ainda.",
     "m-pendente": "Nada na lista.", "m-comprado": "Nada comprado ainda."
   };
 
@@ -429,6 +444,13 @@ footer { display: flex; justify-content: flex-end; }
     $("t-nome").value = "";
   });
 
+  $("f-rotina").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nome = $("r-nome").value.trim(); if (!nome) return;
+    adicionar({ id: slug(nome), tipo: "rotina", nome, status: "pendente", valor: null, obs: "", ordem: null });
+    $("r-nome").value = "";
+  });
+
   $("f-mercado").addEventListener("submit", (e) => {
     e.preventDefault();
     const nome = $("m-nome").value.trim(); if (!nome) return;
@@ -448,6 +470,7 @@ footer { display: flex; justify-content: flex-end; }
       const campos = { nome: $("e-nome").value.trim() || it.nome, obs: $("e-obs").value.trim(), status: $("e-status").value };
       if (it.tipo === "compra") { campos.valor = parseValor($("e-valor").value); campos.status = statusCompra(campos.status, campos.valor); }
       if (campos.status === "pendente" && it.status !== "pendente") campos.ordem = proximaOrdem(it.tipo, "pendente");
+      if (it.tipo === "rotina" && campos.status === "feito" && it.status !== "feito") campos.valor = hoje();
       editing = null; confirmDel = null;
       patch(id, campos);
     }
@@ -471,6 +494,7 @@ footer { display: flex; justify-content: flex-end; }
     const id = c.dataset.id, feito = c.checked, tipo = find(id).tipo;
     const campos = { status: feito ? FEITO[tipo] : "pendente" };
     if (!feito) campos.ordem = proximaOrdem(tipo, "pendente");
+    if (tipo === "rotina" && feito) campos.valor = hoje();
     patch(id, campos);
   });
 
