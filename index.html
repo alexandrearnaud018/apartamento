@@ -180,13 +180,13 @@ footer { display: flex; justify-content: flex-end; }
 
     <section class="col">
       <h2>Dia a dia</h2>
-      <p class="sub">Tarefas de hoje</p>
+      <p class="sub">Tarefas da semana</p>
       <form class="add" id="f-rotina">
         <input type="text" id="r-nome" placeholder="Ex.: tirar o lixo" required aria-label="Tarefa do dia a dia">
         <button class="btn" type="submit">Adicionar</button>
       </form>
-      <div class="group"><h3>A fazer hoje <span class="count" id="n-r-pendente"></span></h3><ul id="l-r-pendente"></ul></div>
-      <div class="group"><h3>Feitas hoje <span class="count" id="n-r-feito"></span></h3><ul id="l-r-feito"></ul></div>
+      <div class="group"><h3>A fazer <span class="count" id="n-r-pendente"></span></h3><ul id="l-r-pendente"></ul></div>
+      <div class="group"><h3>Feitas esta semana <span class="count" id="n-r-feito"></span></h3><ul id="l-r-feito"></ul></div>
       <p class="sub">Compras</p>
       <form class="add" id="f-mercado">
         <input type="text" id="m-nome" placeholder="Ex.: detergente" required aria-label="Item do dia a dia">
@@ -247,7 +247,7 @@ footer { display: flex; justify-content: flex-end; }
     try {
       const { itens } = await api("listar");
       if (drag && drag.active) return;
-      items = itens.map(rotinaDoDia);
+      items = itens.map(rotinaDaSemana);
       loaded = true;
       mostrarApp();
       render();
@@ -287,9 +287,13 @@ footer { display: flex; justify-content: flex-end; }
   const statusCompra = (status, valor) => (status === "comprado" && !valor ? "sem_custo" : status);
   const fmtValorInput = (v) => (typeof v === "number" ? String(v).replace(".", ",") : "");
 
-  // Tarefas do dia a dia: "feito" guarda a data em valor (AAAAMMDD) e volta a "a fazer" no dia seguinte
-  function hoje() { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
-  const rotinaDoDia = (it) => (it.tipo === "rotina" && it.status === "feito" && Number(it.valor) !== hoje() ? Object.assign(it, { status: "pendente" }) : it);
+  // Tarefas da semana: "feito" guarda em valor a segunda-feira da semana (AAAAMMDD) e volta a "a fazer" na semana seguinte
+  function semana() {
+    const d = new Date();
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+  const rotinaDaSemana = (it) => (it.tipo === "rotina" && it.status === "feito" && Number(it.valor) !== semana() ? Object.assign(it, { status: "pendente" }) : it);
 
   function msg(text) { const m = $("msg"); m.textContent = text || ""; m.hidden = !text; }
 
@@ -322,7 +326,7 @@ footer { display: flex; justify-content: flex-end; }
       const opts = isCompra
         ? [["pendente", "Pendente"], ["comprado", "Comprado"], ["sem_custo", "Sem custo"]]
         : isMercado ? [["pendente", "A comprar"], ["comprado", "Comprado"]]
-        : it.tipo === "rotina" ? [["pendente", "A fazer hoje"], ["feito", "Feita hoje"]]
+        : it.tipo === "rotina" ? [["pendente", "A fazer"], ["feito", "Feita esta semana"]]
         : [["pendente", "A fazer"], ["feito", "Feita"]];
       return `<li class="item editing"><form class="inline" data-form="edit" data-id="${id}">
         <input type="text" id="e-nome" value="${esc(it.nome)}" required aria-label="Nome">
@@ -366,7 +370,7 @@ footer { display: flex; justify-content: flex-end; }
   const EMPTY = {
     "c-pendente": "Nada pendente.", "c-comprado": "Nenhuma compra registrada.", "c-sem_custo": "Nenhum item.",
     "t-pendente": "Nenhuma tarefa. Adicione a primeira acima.", "t-feito": "Nenhuma tarefa concluída ainda.",
-    "r-pendente": "Tudo feito por hoje.", "r-feito": "Nada feito hoje ainda.",
+    "r-pendente": "Tudo feito nesta semana.", "r-feito": "Nada feito nesta semana ainda.",
     "m-pendente": "Nada na lista.", "m-comprado": "Nada comprado ainda."
   };
 
@@ -470,7 +474,7 @@ footer { display: flex; justify-content: flex-end; }
       const campos = { nome: $("e-nome").value.trim() || it.nome, obs: $("e-obs").value.trim(), status: $("e-status").value };
       if (it.tipo === "compra") { campos.valor = parseValor($("e-valor").value); campos.status = statusCompra(campos.status, campos.valor); }
       if (campos.status === "pendente" && it.status !== "pendente") campos.ordem = proximaOrdem(it.tipo, "pendente");
-      if (it.tipo === "rotina" && campos.status === "feito" && it.status !== "feito") campos.valor = hoje();
+      if (it.tipo === "rotina" && campos.status === "feito" && it.status !== "feito") campos.valor = semana();
       editing = null; confirmDel = null;
       patch(id, campos);
     }
@@ -494,7 +498,7 @@ footer { display: flex; justify-content: flex-end; }
     const id = c.dataset.id, feito = c.checked, tipo = find(id).tipo;
     const campos = { status: feito ? FEITO[tipo] : "pendente" };
     if (!feito) campos.ordem = proximaOrdem(tipo, "pendente");
-    if (tipo === "rotina" && feito) campos.valor = hoje();
+    if (tipo === "rotina" && feito) campos.valor = semana();
     patch(id, campos);
   });
 
